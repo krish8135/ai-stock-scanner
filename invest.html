@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investment Portfolio - AI Stock Scanner</title>
+    <style>
+        /* [INCLUDE ALL STYLES FROM INDEX.HTML] */
+        
+        .portfolio-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 40px;
+            margin-bottom: 50px;
+        }
+        
+        .portfolio-stats {
+            background: rgba(15, 23, 42, 0.95);
+            border-radius: 25px;
+            padding: 40px;
+            border: 3px solid #475569;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        }
+        
+        .stat-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 25px;
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 20px;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .stat-item:hover {
+            transform: translateY(-5px);
+            border-color: #3b82f6;
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+        }
+        
+        .stat-value {
+            font-size: 2.8rem;
+            font-weight: 900;
+            margin: 15px 0;
+        }
+        
+        .value-positive { color: #34d399; }
+        .value-negative { color: #f87171; }
+        .value-neutral { color: #60a5fa; }
+        
+        .stat-label {
+            color: #94a3b8;
+            font-size: 1rem;
+        }
+        
+        .performance-chart {
+            background: rgba(15, 23, 42, 0.95);
+            border-radius: 25px;
+            padding: 40px;
+            margin-top: 40px;
+            border: 3px solid #475569;
+        }
+        
+        .chart-placeholder {
+            height: 300px;
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            font-size: 1.2rem;
+            margin-top: 20px;
+        }
+        
+        .investments-table-container {
+            background: rgba(15, 23, 42, 0.95);
+            border-radius: 25px;
+            padding: 40px;
+            margin-top: 40px;
+            border: 3px solid #475569;
+            overflow-x: auto;
+        }
+        
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #334155;
+        }
+        
+        .table-title {
+            font-size: 1.8rem;
+            color: #60a5fa;
+            font-weight: bold;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+        
+        th {
+            text-align: left;
+            padding: 20px;
+            color: #94a3b8;
+            border-bottom: 2px solid #334155;
+            font-weight: 600;
+            font-size: 1.1rem;
+            background: rgba(30, 41, 59, 0.8);
+        }
+        
+        td {
+            padding: 20px;
+            border-bottom: 1px solid #334155;
+            transition: all 0.3s;
+        }
+        
+        tr:hover td {
+            background: rgba(59, 130, 246, 0.05);
+        }
+        
+        .status-badge {
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            display: inline-block;
+            min-width: 100px;
+            text-align: center;
+        }
+        
+        .status-active { background: rgba(34, 197, 94, 0.2); color: #34d399; border: 2px solid #34d399; }
+        .status-closed { background: rgba(148, 163, 184, 0.2); color: #94a3b8; border: 2px solid #94a3b8; }
+        .status-stop { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 2px solid #f87171; }
+        
+        .action-cell {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .table-btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+        
+        .view-btn { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 2px solid #3b82f6; }
+        .close-btn { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 2px solid #ef4444; }
+        .edit-btn { background: rgba(251, 191, 36, 0.2); color: #fbbf24; border: 2px solid #f59e0b; }
+        
+        .table-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .filter-tabs {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-tab {
+            padding: 15px 30px;
+            background: rgba(30, 41, 59, 0.8);
+            border: 2px solid #475569;
+            border-radius: 15px;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        
+        .filter-tab.active {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: #3b82f6;
+            color: #60a5fa;
+        }
+        
+        .filter-tab:hover {
+            transform: translateY(-3px);
+        }
+        
+        @media (max-width: 1200px) {
+            .portfolio-header { grid-template-columns: 1fr; }
+            .stat-row { grid-template-columns: repeat(2, 1fr); }
+        }
+        
+        @media (max-width: 768px) {
+            .stat-row { grid-template-columns: 1fr; }
+            .stat-item { padding: 20px; }
+            .stat-value { font-size: 2.2rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-btn" style="position: absolute; left: 20px; top: 30px; background: #1e293b; color: #cbd5e1; padding: 12px 25px; border-radius: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; border: 2px solid #475569;">
+            ← Back to Scanner
+        </a>
+        
+        <header>
+            <h1 style="margin-top: 40px;">📈 INVESTMENT PORTFOLIO</h1>
+            <p style="color: #94a3b8; font-size: 1.2rem; max-width: 800px; margin: 0 auto 20px;">
+                Track your positions • Monitor performance • Manage risk • Analyze returns
+            </p>
+            <div class="api-status">💰 Simulated Portfolio • Educational Mode Active</div>
+        </header>
+        
+        <!-- Portfolio Overview -->
+        <div class="portfolio-stats">
+            <div class="table-header">
+                <div class="table-title">💰 PORTFOLIO OVERVIEW</div>
+                <div style="color: #34d399; font-weight: bold; font-size: 1.1rem;">
+                    Last updated: <span id="updateTime"></span>
+                </div>
+            </div>
+            
+            <div class="stat-row">
+                <div class="stat-item">
+                    <div class="stat-label">Total Investments</div>
+                    <div class="stat-value value-neutral">₹1,85,000</div>
+                    <div class="stat-label">Across 8 positions</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Current Value</div>
+                    <div class="stat-value value-positive">₹2,01,450</div>
+                    <div class="stat-label">+₹16,450 (+8.9%)</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Today's P&L</div>
+                    <div class="stat-value value-positive">+₹3,850</div>
+                    <div class="stat-label">+1.95% intraday</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Success Rate</div>
+                    <div class="stat-value value-positive">68%</div>
+                    <div class="stat-label">Winning trades</div>
+                </div>
+            </div>
+            
+            <div class="stat-row">
+                <div class="stat-item">
+                    <div class="stat-label">Best Performer</div>
+                    <div class="stat-value value-positive">RELIANCE</div>
+                    <div class="stat-label">+18.2% in 7 days</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Risk Exposure</div>
+                    <div class="stat-value value-neutral">Medium</div>
+                    <div class="stat-label">Score: 42/100</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Avg. Holding</div>
+                    <div class="stat-value value-neutral">5.3 Days</div>
+                    <div class="stat-label">Intraday focus</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Win/Loss Ratio</div>
+                    <div class="stat-value value-positive">2.8:1</div>
+                    <div class="stat-label">Profitable strategy</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Performance Chart -->
+        <div class="performance-chart">
+            <div class="table-header">
+                <div class="table-title">📊 PERFORMANCE TREND</div>
+                <div class="filter-tabs">
+                    <div class="filter-tab active" onclick="changeChartRange('7d')">7D</div>
+                    <div class="filter-tab" onclick="changeChartRange('30d')">30D</div>
+                    <div class="filter-tab" onclick="changeChartRange('90d')">90D</div>
+                    <div class="filter-tab" onclick="changeChartRange('1y')">1Y</div>
+                    <div class="filter-tab" onclick="changeChartRange('all')">ALL</div>
+                </div>
+            </div>
+            <div class="chart-placeholder">
+                📈 Performance chart would show here<br>
+                <span style="font-size: 0.9rem; color: #94a3b8; margin-top: 10px;">(In full version, shows interactive chart)</span>
+            </div>
+        </div>
+        
+        <!-- Investments Table -->
+        <div class="investments-table-container">
+            <div class="table-header">
+                <div class="table-title">💼 ACTIVE INVESTMENTS</div>
+                <div style="display: flex; gap: 15px;">
+                    <button onclick="addNewInvestment()" style="padding: 12px 25px; background: linear-gradient(90deg, #10b981, #059669); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer;">
+                        + ADD NEW
+                    </button>
+                    <button onclick="exportPortfolio()" style="padding: 12px 25px; background: rgba(30, 41, 59, 0.8); color: #60a5fa; border: 2px solid #475569; border-radius: 10px; font-weight: bold; cursor: pointer;">
+                        📥 EXPORT CSV
+                    </button>
+                </div>
+            </div>
+            
+            <div class="filter-tabs" style="margin-bottom: 30px;">
+                <div class="filter-tab active" onclick="filterInvestments('all')">All (8)</div>
+                <div class="filter-tab" onclick="filterInvestments('active')">Active (5)</div>
+                <div class="filter-tab" onclick="filterInvestments('closed')">Closed (2)</div>
+                <div class="filter-tab" onclick="filterInvestments('stop')">Stop Loss (1)</div>
+                <div class="filter-tab" onclick="filterInvestments('profit')">Profit Taken (4)</div>
+            </div>
+            
+            <table id="investmentsTable">
+                <thead>
+                    <tr>
+                        <th>Stock</th>
+                        <th>Entry Date</th>
+                        <th>Entry Price</th>
+                        <th>Current Price</th>
+                        <th>Target</th>
+                        <th>Stop Loss</th>
+                        <th>Quantity</th>
+                        <th>P&L</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Table rows will be loaded by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Navigation -->
+    <nav class="nav-bar">
+        <a href="index.html" class="nav-item">
+            <span class="nav-icon">🏠</span>
+            Home
+        </a>
+        <a href="news.html" class="nav-item">
+            <span class="nav-icon">📰</span>
+            News
+        </a>
+        <a href="invest.html" class="nav-item active">
+            <span class="nav-icon">📈</span>
+            Invest
+        </a>
+        <a href="stocks.html" class="nav-item">
+            <span class="nav-icon">📊</span>
+            Stocks
+        </a>
+        <a href="profile.html" class="nav-item">
+            <span class="nav-icon">👤</span>
+            Profile
+        </a>
+    </nav>
+    
+    <script>
+        // ==================== INVESTMENT DATA ====================
+        const investmentsData = [
+            {
+                id: 1,
+                symbol: "RELIANCE",
+                name: "Reliance Industries",
+                entryDate: "2024-01-15",
+                entryPrice: 2720.50,
+                currentPrice: 2850.50,
+                targetPrice: 3200.00,
+                stopLoss: 2650.00,
+                quantity: 50,
+                invested: 136025,
+                currentValue: 142525,
+                pnl: 6500,
+                pnlPercent: 4.78,
+                status: "active",
+                entryReason: "Breakout from consolidation with increasing volume",
+                daysHeld: 7,
+                riskLevel: "medium"
+            },
+            {
+                id: 2,
+                symbol: "TCS",
+                name: "Tata Consultancy Services",
+                entryDate: "2024-01-10",
+                entryPrice: 3780.25,
+                currentPrice: 3845.25,
+                targetPrice: 4100.00,
+                stopLoss: 3700.00,
+                quantity: 25,
+                invested: 94506,
+                currentValue: 96131,
+                pnl: 1625,
+                pnlPercent: 1.72,
+                status: "active",
+                entryReason: "Support bounce with RSI oversold",
+                daysHeld: 12,
+                riskLevel: "low"
+            },
+            {
+                id: 3,
+                symbol: "HDFCBANK",
+                name: "HDFC Bank",
+                entryDate: "2024-01-05",
+                entryPrice: 1620.80,
+                currentPrice: 1645.80,
+                targetPrice: 1750.00,
+                stopLoss: 1580.00,
+                quantity: 60,
+                invested: 97248,
+                currentValue: 98748,
+                pnl: 1500,
+                pnlPercent: 1.54,
+                status: "active",
+                entryReason: "Oversold bounce opportunity",
+                daysHeld: 17,
+                riskLevel: "low"
+            },
+            {
+                id: 4,
+                symbol: "INFY",
+                name: "Infosys",
+                entryDate: "2024-01-03",
+                entryPrice: 1480.40,
+                currentPrice: 1520.40,
+                targetPrice: 1620.00,
+                stopLoss: 1440.00,
+                quantity: 70,
+                invested: 103628,
+                currentValue: 106428,
+                pnl: 2800,
+                pnlPercent: 2.70,
+                status: "active",
+                entryReason: "AI sector momentum play",
+                daysHeld: 19,
+                riskLevel: "medium"
+            },
+            {
+                id: 5,
+                symbol: "BAJFINANCE",
+                name: "Bajaj Finance",
+                entryDate: "2024-01-02",
+                entryPrice: 7100.00,
+                currentPrice: 7245.60,
+                targetPrice: 7800.00,
+                stopLoss: 6900.00,
+                quantity: 10,
+                invested: 71000,
+                currentValue: 72456,
+                pnl: 1456,
+                pnlPercent: 2.05,
+                status: "active",
+                entryReason: "Breakout from resistance",
+                daysHeld: 20,
+                riskLevel: "high"
+            },
+            {
+                id: 6,
+                symbol: "ITC",
+                name: "ITC Ltd",
+                entryDate: "2023-12-28",
+                entryPrice: 440.00,
+                currentPrice: 425.80,
+                targetPrice: 480.00,
+                stopLoss: 430.00,
+                quantity: 200,
+                invested: 88000,
+                currentValue: 85160,
+                pnl: -2840,
+                pnlPercent: -3.23,
+                status: "stop",
+                entryReason: "Failed breakout attempt",
+                daysHeld: 24,
+                riskLevel: "medium",
+                exitDate: "2024-01-05",
+                exitPrice: 430.00,
+                exitReason: "Stop loss triggered"
+            },
+            {
+                id: 7,
+                symbol: "SBIN",
+                name: "State Bank of India",
+                entryDate: "2023-12-20",
+                entryPrice: 580.50,
+                currentPrice: 580.50,
+                targetPrice: 600.00,
+                stopLoss: 570.00,
+                quantity: 150,
+                invested: 87075,
+                currentValue: 87075,
+                pnl: 0,
+                pnlPercent: 0.00,
+                status: "closed",
+                entryReason: "Banking sector rotation",
+                daysHeld: 8,
+                riskLevel: "low",
+                exitDate: "2023-12-28",
+                exitPrice: 600.00,
+                exitReason: "Target achieved"
+            },
+            {
+                id: 8,
+                symbol: "WIPRO",
+                name: "Wipro Ltd",
+                entryDate: "2023-12-15",
+                entryPrice: 420.25,
+                currentPrice: 420.25,
+                targetPrice: 450.00,
+                stopLoss: 410.00,
+                quantity: 100,
+                invested: 42025,
+                currentValue: 42025,
+                pnl: 0,
+                pnlPercent: 0.00,
+                status: "closed",
+                entryReason: "IT sector catch-up play",
+                daysHeld: 5,
+                riskLevel: "medium",
+                exitDate: "2023-12-20",
+                exitPrice: 445.00,
+                exitReason: "Partial profit booking"
+            }
+        ];
+        
+        // ==================== INITIALIZATION ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            // Update timestamp
+            document.getElementById('updateTime').textContent = 
+                new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            // Load investments table
+            loadInvestmentsTable();
+            
+            // Calculate portfolio summary
+            calculatePortfolioSummary();
+            
+            // Auto-update every 30 seconds
+            setInterval(updatePortfolioData, 30000);
+        });
+        
+        // ==================== TABLE FUNCTIONS ====================
+        function loadInvestmentsTable(filter = 'all') {
+            const tableBody = document.querySelector('#investmentsTable tbody');
+            let filteredData = investmentsData;
+            
+            if (filter === 'active') {
+                filteredData = investmentsData.filter(inv => inv.status === 'active');
+            } else if (filter === 'closed') {
+                filteredData = investmentsData.filter(inv => inv.status === 'closed');
+            } else if (filter === 'stop') {
+                filteredData = investmentsData.filter(inv => inv.status === 'stop');
+            } else if (filter === 'profit') {
+                filteredData = investmentsData.filter(inv => inv.pnlPercent > 0);
+            }
+            
+            let tableHTML = '';
+            
+            filteredData.forEach(investment => {
+                const pnlClass = investment.pnlPercent >= 0 ? 'value-positive' : 'value-negative';
+                const pnlSign = investment.pnlPercent >= 0 ? '+' : '';
+                
+                tableHTML += `
+                    <tr>
+                        <td style="font-weight: bold; color: #60a5fa;">
+                            <div>${investment.symbol}</div>
+                            <div style="font-size: 0.9rem; color: #94a3b8;">${investment.name}</div>
+                        </td>
+                        <td>${investment.entryDate}</td>
+                        <td>₹${investment.entryPrice.toFixed(2)}</td>
+                        <td>
+                            <div style="font-weight: bold;">₹${investment.currentPrice.toFixed(2)}</div>
+                            <div style="font-size: 0.9rem; color: ${investment.currentPrice >= investment.entryPrice ? '#34d399' : '#f87171'};">
+                                ${investment.currentPrice >= investment.entryPrice ? '↗' : '↘'} 
+                                ${Math.abs(investment.currentPrice - investment.entryPrice).toFixed(2)}
+                            </div>
+                        </td>
+                        <td style="color: #34d399; font-weight: bold;">₹${investment.targetPrice.toFixed(2)}</td>
+                        <td style="color: #f87171; font-weight: bold;">₹${investment.stopLoss.toFixed(2)}</td>
+                        <td>${investment.quantity}</td>
+                        <td class="${pnlClass}" style="font-weight: bold;">
+                            ${pnlSign}₹${investment.pnl.toFixed(2)}<br>
+                            <span style="font-size: 0.9rem;">(${pnlSign}${investment.pnlPercent.toFixed(2)}%)</span>
+                        </td>
+                        <td>
+                            <span class="status-badge status-${investment.status}">
+                                ${investment.status.toUpperCase()}
+                            </span>
+                            ${investment.daysHeld ? `<div style="font-size: 0.8rem; color: #94a3b8; margin-top: 5px;">${investment.daysHeld} days</div>` : ''}
+                        </td>
+                        <td>
+                            <div class="action-cell">
+                                <button class="table-btn view-btn" onclick="viewInvestmentDetails(${investment.id})">
+                                    👁️ View
+                                </button>
+                                ${investment.status === 'active' ? `
+                                    <button class="table-btn close-btn" onclick="closeInvestment(${investment.id})">
+                                        🏁 Close
+                                    </button>
+                                ` : ''}
+                                <button class="table-btn edit-btn" onclick="editInvestment(${investment.id})">
+                                    ✏️ Edit
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tableBody.innerHTML = tableHTML;
+        }
+        
+        // ==================== FILTER FUNCTIONS ====================
+        function filterInvestments(filterType) {
+            // Update active tab
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Load filtered table
+            loadInvestmentsTable(filterType);
+        }
+        
+        function changeChartRange(range) {
+            // Update active tab
+            const tabs = event.target.parentElement.querySelectorAll('.filter-tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // In full version, this would update the chart
+            console.log(`Changed chart range to: ${range}`);
+            
+            // Update chart placeholder
+            const placeholder = document.querySelector('.chart-placeholder');
+            placeholder.innerHTML = `
+                📈 Loading ${range} performance data...<br>
+                <span style="font-size: 0.9rem; color: #94a3b8; margin-top: 10px;">
+                    Showing ${range} chart with portfolio performance
+                </span>
+            `;
+            
+            setTimeout(() => {
+                placeholder.innerHTML = `
+                    📈 Performance chart for ${range}<br>
+                    <span style="font-size: 0.9rem; color: #94a3b8; margin-top: 10px;">
+                        (In full version, shows interactive chart for ${range})
+                    </span>
+                `;
+            }, 1000);
+        }
+        
+        // ==================== CALCULATION FUNCTIONS ====================
+        function calculatePortfolioSummary() {
+            let totalInvested = 0;
+            let totalCurrent = 0;
+            let totalPnl = 0;
+            let activeCount = 0;
+            let closedCount = 0;
+            let profitCount = 0;
+            
+            investmentsData.forEach(inv => {
+                totalInvested += inv.invested;
+                totalCurrent += inv.currentValue;
+                totalPnl += inv.pnl;
+                
+                if (inv.status === 'active') activeCount++;
+                if (inv.status === 'closed') closedCount++;
+                if (inv.pnl > 0) profitCount++;
+            });
+            
+            const totalPercent = ((totalCurrent - totalInvested) / totalInvested) * 100;
+            const successRate = Math.round((profitCount / investmentsData.length) * 100);
+            
+            // Update displayed values (simulated)
+            document.querySelectorAll('.stat-value')[0].textContent = `₹${formatNumber(totalInvested)}`;
+            document.querySelectorAll('.stat-value')[1].textContent = `₹${formatNumber(totalCurrent)}`;
+            document.querySelectorAll('.stat-value')[2].textContent = `+₹${formatNumber(totalPnl)}`;
+            document.querySelectorAll('.stat-value')[3].textContent = `${successRate}%`;
+            
+            // Update the labels
+            document.querySelectorAll('.stat-label')[1].textContent = 
+                `+₹${formatNumber(totalCurrent - totalInvested)} (${totalPercent.toFixed(2)}%)`;
+            document.querySelectorAll('.stat-label')[2].textContent = 
+                `+${((totalPnl / totalInvested) * 100).toFixed(2)}% intraday`;
+        }
+        
+        function formatNumber(num) {
+            if (num >= 10000000) {
+                return (num / 10000000).toFixed(2) + 'Cr';
+            } else if (num >= 100000) {
+                return (num / 100000).toFixed(2) + 'L';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(2) + 'K';
+            }
+            return num.toFixed(2);
+        }
+        
+        // ==================== ACTION FUNCTIONS ====================
+        function viewInvestmentDetails(id) {
+            const investment = investmentsData.find(inv => inv.id === id);
+            
+            if (investment) {
+                alert(`
+                    📊 INVESTMENT DETAILS - ${investment.symbol}
+                    ====================================
+                    Stock: ${investment.name} (${investment.symbol})
+                    Status: ${investment.status.toUpperCase()}
+                    
+                    📈 ENTRY DETAILS:
+                    Entry Date: ${investment.entryDate}
+                    Entry Price: ₹${investment.entryPrice.toFixed(2)}
+                    Quantity: ${investment.quantity}
+                    Amount Invested: ₹${investment.invested.toFixed(2)}
+                    
+                    🎯 TARGETS:
+                    Target Price: ₹${investment.targetPrice.toFixed(2)} (${(((investment.targetPrice - investment.entryPrice) / investment.entryPrice) * 100).toFixed(2)}%)
+                    Stop Loss: ₹${investment.stopLoss.toFixed(2)} (${(((investment.stopLoss - investment.entryPrice) / investment.entryPrice) * 100).toFixed(2)}%)
+                    
+                    💰 CURRENT STATUS:
+                    Current Price: ₹${investment.currentPrice.toFixed(2)}
+                    Current Value: ₹${investment.currentValue.toFixed(2)}
+                    P&L: ${investment.pnl >= 0 ? '+' : ''}₹${investment.pnl.toFixed(2)} (${investment.pnlPercent >= 0 ? '+' : ''}${investment.pnlPercent.toFixed(2)}%)
+                    
+                    📝 REASON FOR ENTRY:
+                    ${investment.entryReason}
+                    
+                    ${investment.exitDate ? `
+                    🏁 EXIT DETAILS:
+                    Exit Date: ${investment.exitDate}
+                    Exit Price: ₹${investment.exitPrice.toFixed(2)}
+                    Exit Reason: ${investment.exitReason}
+                    ` : ''}
+                    
+                    ⚠️ RISK LEVEL: ${investment.riskLevel.toUpperCase()}
+                    ⏳ DAYS HELD: ${investment.daysHeld} days
+                `);
+            }
+        }
+        
+        function closeInvestment(id) {
+            if (confirm('Are you sure you want to close this position?')) {
+                const investment = investmentsData.find(inv => inv.id === id);
+                if (investment) {
+                    investment.status = 'closed';
+                    investment.exitDate = new Date().toISOString().split('T')[0];
+                    investment.exitPrice = investment.currentPrice;
+                    investment.exitReason = 'Manually closed by user';
+                    
+                    alert(`Position closed for ${investment.symbol} at ₹${investment.exitPrice.toFixed(2)}`);
+                    loadInvestmentsTable();
+                    calculatePortfolioSummary();
+                }
+            }
+        }
+        
+        function editInvestment(id) {
+            alert(`Editing investment #${id}\n\nIn full version, this would open an edit form with:\n• Adjust stop loss/target\n• Modify position size\n• Add notes\n• Change risk parameters`);
+        }
+        
+        function addNewInvestment() {
+            alert(`Adding new investment...\n\nIn full version, this would open a form to:\n• Select stock from scanner\n• Set entry price\n• Define stop loss/target\n• Calculate position size\n• Set risk parameters`);
+        }
+        
+        function exportPortfolio() {
+            alert('Exporting portfolio to CSV...\n\nFile would contain:\n• All investment details\n• Performance metrics\n• Risk analysis\n• Trade history\n\nFile: portfolio_export_${date}.csv');
+        }
+        
+        function updatePortfolioData() {
+            // Simulate price updates
+            investmentsData.forEach(inv => {
+                if (inv.status === 'active') {
+                    // Random price change between -2% and +3%
+                    const changePercent = (Math.random() * 5) - 2;
+                    const change = inv.currentPrice * (changePercent / 100);
+                    
+                    inv.currentPrice += change;
+                    inv.currentValue = inv.currentPrice * inv.quantity;
+                    inv.pnl = inv.currentValue - inv.invested;
+                    inv.pnlPercent = (inv.pnl / inv.invested) * 100;
+                    
+                    // Update days held
+                    const entryDate = new Date(inv.entryDate);
+                    const today = new Date();
+                    const diffTime = Math.abs(today - entryDate);
+                    inv.daysHeld = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                }
+            });
+            
+            // Update table and summary
+            loadInvestmentsTable();
+            calculatePortfolioSummary();
+            
+            // Update timestamp
+            document.getElementById('updateTime').textContent = 
+                new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            console.log('Portfolio data updated');
+        }
+    </script>
+</body>
+</html>

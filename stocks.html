@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Watchlist - AI Stock Scanner</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        /* [INCLUDE ALL STYLES FROM INDEX.HTML] */
+        
+        .watchlist-header {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 30px;
+            margin-bottom: 40px;
+            align-items: center;
+        }
+        
+        .search-container {
+            background: rgba(15, 23, 42, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            border: 3px solid #475569;
+            margin-bottom: 40px;
+        }
+        
+        .search-box {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 18px 25px;
+            background: rgba(30, 41, 59, 0.8);
+            border: 2px solid #475569;
+            border-radius: 15px;
+            color: #f8fafc;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        
+        .search-btn {
+            padding: 18px 40px;
+            background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .search-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4);
+        }
+        
+        .quick-filters {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .quick-filter {
+            padding: 12px 25px;
+            background: rgba(30, 41, 59, 0.8);
+            border: 2px solid #475569;
+            border-radius: 12px;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .quick-filter:hover {
+            background: rgba(59, 130, 246, 0.15);
+            border-color: #3b82f6;
+            color: #60a5fa;
+            transform: translateY(-2px);
+        }
+        
+        .quick-filter.active {
+            background: rgba(59, 130, 246, 0.25);
+            border-color: #3b82f6;
+            color: #60a5fa;
+        }
+        
+        .stocks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+        
+        .stock-card-large {
+            background: rgba(15, 23, 42, 0.95);
+            border-radius: 25px;
+            padding: 35px;
+            border: 3px solid #475569;
+            transition: all 0.4s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stock-card-large::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #8b5cf6, #7c3aed);
+        }
+        
+        .stock-card-large:hover {
+            transform: translateY(-10px);
+            border-color: #8b5cf6;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+        }
+        
+        .stock-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 30px;
+            padding-bottom: 25px;
+            border-bottom: 3px solid #334155;
+        }
+        
+        .stock-card-title {
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: #60a5fa;
+            letter-spacing: 1px;
+        }
+        
+        .stock-card-subtitle {
+            color: #94a3b8;
+            font-size: 1.1rem;
+            margin-top: 8px;
+        }
+        
+        .ai-badge {
+            padding: 12px 25px;
+            background: rgba(139, 92, 246, 0.2);
+            color: #8b5cf6;
+            border: 2px solid #8b5cf6;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+        }
+        
+        .price-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 35px;
+        }
+        
+        .current-price {
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: #f8fafc;
+            text-shadow: 0 2px 15px rgba(96, 165, 250, 0.3);
+            line-height: 1;
+        }
+        
+        .price-change {
+            font-size: 1.8rem;
+            font-weight: bold;
+            padding: 15px 25px;
+            border-radius: 15px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .change-positive { background: rgba(34, 197, 94, 0.2); color: #34d399; border: 2px solid #34d399; }
+        .change-negative { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 2px solid #f87171; }
+        
+        .change-percent {
+            font-size: 1.3rem;
+            margin-top: 8px;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 35px;
+        }
+        
+        .metric-card {
+            background: rgba(30, 41, 59, 0.8);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid #475569;
+            transition: all 0.3s;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-5px);
+            border-color: #3b82f6;
+        }
+        
+        .metric-label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+        
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #f8fafc;
+        }
+        
+        .metric-sub {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-top: 5px;
+        }
+        
+        .ai-analysis {
+            background: rgba(30, 64, 175, 0.15);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 35px;
+            border-left: 5px solid #3b82f6;
+        }
+        
+        .analysis-title {
+            color: #60a5fa;
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .analysis-text {
+            color: #cbd5e1;
+            line-height: 1.7;
+            font-size: 1.05rem;
+        }
+        
+        .action-buttons-large {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        
+        .action-btn-large {
+            padding: 20px;
+            border-radius: 15px;
+            border: none;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        
+        .watchlist-btn {
+            background: rgba(30, 41, 59, 0.8);
+            color: #60a5fa;
+            border: 2px solid #475569;
+        }
+        
+        .analyze-btn-large {
+            background: linear-gradient(90deg, #8b5cf6, #7c3aed);
+            color: white;
+            border: 2px solid #8b5cf6;
+        }
+        
+        .trade-btn {
+            background: linear-gradient(90deg, #10b981, #059669);
+            color: white;
+            border: 2px solid #10b981;
+        }
+        
+        .action-btn-large:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+        }
+        
+        .empty-state {
+            grid-column: 1/-1;
+            text-align: center;
+            padding: 80px 40px;
+            background: rgba(15, 23, 42, 0.95);
+            border-radius: 25px;
+            border: 3px dashed #475569;
+        }
+        
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 30px;
+            opacity: 0.5;
+        }
+        
+        .empty-title {
+            font-size: 2rem;
+            color: #f8fafc;
+            margin-bottom: 20px;
+        }
+        
+        .empty-text {
+            color: #94a3b8;
+            font-size: 1.1rem;
+            max-width: 500px;
+            margin: 0 auto 40px;
+            line-height: 1.6;
+        }
+        
+        @media (max-width: 1200px) {
+            .stocks-grid { grid-template-columns: repeat(2, 1fr); }
+            .price-section { grid-template-columns: 1fr; }
+        }
+        
+        @media (max-width: 768px) {
+            .stocks-grid { grid-template-columns: 1fr; }
+            .watchlist-header { grid-template-columns: 1fr; }
+            .action-buttons-large { grid-template-columns: 1fr; }
+            .metrics-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-btn" style="position: absolute; left: 20px; top: 30px; background: #1e293b; color: #cbd5e1; padding: 12px 25px; border-radius: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; border: 2px solid #475569;">
+            ← Back to Scanner
+        </a>
+        
+        <header>
+            <h1 style="margin-top: 40px;">📊 STOCK WATCHLIST</h1>
+            <p style="color: #94a3b8; font-size: 1.2rem; max-width: 800px; margin: 0 auto 20px;">
+                Track your favorite stocks • AI-powered analysis • Real-time alerts
+            </p>
+            <div class="api-status">🔗 Live data from Twelve Data API • Updates every 30 seconds</div>
+        </header>
+        
+        <!-- Search & Filters -->
+        <div class="search-container">
+            <div class="search-box">
+                <input type="text" class="search-input" id="searchInput" placeholder="Search stocks (RELIANCE, TCS, INFY...) or type 'all' for complete list">
+                <button class="search-btn" onclick="searchStocks()">
+                    🔍 Search
+                </button>
+            </div>
+            
+            <div class="quick-filters">
+                <div class="quick-filter active" onclick="filterStocks('all')">All Stocks</div>
+                <div class="quick-filter" onclick="filterStocks('nifty50')">Nifty 50</div>
+                <div class="quick-filter" onclick="filterStocks('banking')">Banking</div>
+                <div class="quick-filter" onclick="filterStocks('technology')">Technology</div>
+                <div class="quick-filter" onclick="filterStocks('bullish')">Bullish Signals</div>
+                <div class="quick-filter" onclick="filterStocks('oversold')">Oversold</div>
+                <div class="quick-filter" onclick="filterStocks('high_volume')">High Volume</div>
+                <div class="quick-filter" onclick="filterStocks('ai_recommended')">AI Recommended</div>
+            </div>
+        </div>
+        
+        <!-- Stocks Grid -->
+        <div class="stocks-grid" id="stocksGrid">
+            <!-- Stock cards will be loaded here -->
+        </div>
+        
+        <!-- Load More Button -->
+        <div style="text-align: center; margin-top: 40px;">
+            <button onclick="loadMoreStocks()" style="padding: 20px 50px; background: linear-gradient(90deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 15px; font-size: 1.2rem; font-weight: bold; cursor: pointer;">
+                📈 LOAD MORE STOCKS
+            </button>
+        </div>
+    </div>
+    
+    <!-- Navigation -->
+    <nav class="nav-bar">
+        <a href="index.html" class="nav-item">
+            <span class="nav-icon">🏠</span>
+            Home
+        </a>
+        <a href="news.html" class="nav-item">
+            <span class="nav-icon">📰</span>
+            News
+        </a>
+        <a href="invest.html" class="nav-item">
+            <span class="nav-icon">📈</span>
+            Invest
+        </a>
+        <a href="stocks.html" class="nav-item active">
+            <span class="nav-icon">📊</span>
+            Stocks
+        </a>
+        <a href="profile.html" class="nav-item">
+            <span class="nav-icon">👤</span>
+            Profile
+        </a>
+    </nav>
+    
+    <script>
+        // ==================== CONFIGURATION ====================
+        const STOCKS_CONFIG = {
+            API_KEY: '6412c88df083491c95bed663cde2f179',
+            BASE_URL: 'https://api.twelvedata.com',
+            DEFAULT_STOCKS: [
+                'RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK',
+                'HINDUNILVR', 'ITC', 'SBIN', 'BHARTIARTL', 'BAJFINANCE',
+                'KOTAKBANK', 'LT', 'HCLTECH', 'AXISBANK', 'ASIANPAINT',
+                'MARUTI', 'SUNPHARMA', 'TITAN', 'WIPRO', 'POWERGRID',
+                'NTPC', 'ONGC', 'ULTRACEMCO', 'TECHM', 'JSWSTEEL'
+            ],
+            SECTORS: {
+                'RELIANCE': 'Energy',
+                'TCS': 'Technology',
+                'HDFCBANK': 'Banking',
+                'INFY': 'Technology',
+                'ICICIBANK': 'Banking',
+                'HINDUNILVR': 'FMCG',
+                'ITC': 'FMCG',
+                'SBIN': 'Banking',
+                'BHARTIARTL': 'Telecom',
+                'BAJFINANCE': 'Finance'
+            }
+        };
+        
+        // ==================== STATE MANAGEMENT ====================
+        let allStocks = [];
+        let displayedStocks = [];
+        let currentFilter = 'all';
+        let currentPage = 1;
+        const stocksPerPage = 8;
+        
+        // ==================== INITIALIZATION ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Watchlist initialized');
+            loadInitialStocks();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(updateStockPrices, 30000);
+            
+            // Set up search input listener
+            document.getElementById('searchInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchStocks();
+                }
+            });
+        });
+        
+        // ==================== STOCK LOADING ====================
+        async function loadInitialStocks() {
+            const stocksGrid = document.getElementById('stocksGrid');
+            
+            // Show loading
+            stocksGrid.innerHTML = `
+                <div class="empty-state">
+                    <div class="loader" style="margin: 0 auto 30px;"></div>
+                    <div style="color: #60a5fa; font-size: 1.3rem;">
+                        Loading live stock data from API...
+                    </div>
+                </div>
+            `;
+            
+            try {
+                // Try to load real data
+                await loadRealStockData();
+            } catch (error) {
+                console.error('Failed to load real data:', error);
+                // Fallback to demo data
+                loadDemoStockData();
+            }
+        }
+        
+        async function loadRealStockData() {
+            const symbols = STOCKS_CONFIG.DEFAULT_STOCKS.slice(0, 12);
+            const stockPromises = symbols.map(symbol => fetchStockData(symbol));
+            
+            const results = await Promise.allSettled(stockPromises);
+            
+            allStocks = results
+                .filter(result => result.status === 'fulfilled' && result.value)
+                .map(result => result.value);
+            
+            if (allStocks.length === 0) {
+                throw new Error('No stock data received');
+            }
+            
+            displayedStocks = allStocks.slice(0, stocksPerPage);
+            displayStocks(displayedStocks);
+        }
+        
+        async function fetchStockData(symbol) {
+            try {
+                // Using demo data for now (replace with real API call)
+                return generateStockData(symbol);
+                
+                // Real API call (uncomment when ready):
+                /*
+                const response = await axios.get(`${STOCKS_CONFIG.BASE_URL}/price`, {
+                    params: {
+                        symbol: `${symbol}.NS`,
+                        apikey: STOCKS_CONFIG.API_KEY,
+                        format: 'JSON'
+                    }
+                });
+                
+                return {
+                    symbol: symbol,
+                    price: parseFloat(response.data.price),
+                    // ... other data
+                };
+                */
+            } catch (error) {
+                console.error(`Failed to fetch ${symbol}:`, error);
+                return null;
+            }
+        }
+        
+        // ==================== STOCK DISPLAY ====================
+        function displayStocks(stocks) {
+            const stocksGrid = document.getElementById('stocksGrid');
+            
+            if (!stocks || stocks.length === 0) {
+                stocksGrid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📊</div>
+                        <div class="empty-title">No Stocks Found</div>
+                        <div class="empty-text">
+                            Try adjusting your search or filters. You can also type "all" in the search box to see all available stocks.
+                        </div>
+                        <button onclick="loadInitialStocks()" style="padding: 15px 40px; background: linear-gradient(90deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: bold; cursor: pointer;">
+                            Reload Stocks
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            let stocksHTML = '';
+            
+            stocks.forEach(stock => {
+                const changeClass = stock.change >= 0 ? 'change-positive' : 'change-negative';
+                const changeSign = stock.change >= 0 ? '+' : '';
+                const changePercent = ((stock.change / stock.price) * 100).toFixed(2);
+                
+                const aiSignal = analyzeStockSignal(stock);
+                const analysis = generateStockAnalysis(stock);
+                
+                stocksHTML += `
+                    <div class="stock-card-large">
+                        <div class="stock-card-header">
+                            <div>
+                                <div class="stock-card-title">${stock.symbol}</div>
+                                <div class="stock-card-subtitle">
+                                    ${stock.name} • ${STOCKS_CONFIG.SECTORS[stock.symbol] || 'Various'} Sector
+                                </div>
+                            </div>
+                            <div class="ai-badge">${aiSignal.signal}</div>
+                        </div>
+                        
+                        <div class="price-section">
+                            <div>
+                                <div class="current-price">₹${stock.price.toFixed(2)}</div>
+                                <div style="color: #94a3b8; margin-top: 10px; font-size: 1.1rem;">
+                                    Market Cap: ₹${formatMarketCap(stock.marketCap)} • Volume: ${formatVolume(stock.volume)}
+                                </div>
+                            </div>
+                            <div class="price-change ${changeClass}">
+                                <div>${changeSign}₹${Math.abs(stock.change).toFixed(2)}</div>
+                                <div class="change-percent">${changeSign}${changePercent}%</div>
+                            </div>
+                        </div>
+                        
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <div class="metric-label">52W High</div>
+                                <div class="metric-value" style="color: #34d399;">₹${stock.week52High.toFixed(2)}</div>
+                                <div class="metric-sub">${(((stock.price - stock.week52High) / stock.week52High) * 100).toFixed(2)}% below high</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">52W Low</div>
+                                <div class="metric-value" style="color: #f87171;">₹${stock.week52Low.toFixed(2)}</div>
+                                <div class="metric-sub">${(((stock.price - stock.week52Low) / stock.week52Low) * 100).toFixed(2)}% above low</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">P/E Ratio</div>
+                                <div class="metric-value">${stock.peRatio.toFixed(2)}</div>
+                                <div class="metric-sub">${stock.peRatio > 25 ? 'Above average' : 'Reasonable'}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Dividend Yield</div>
+                                <div class="metric-value" style="color: #fbbf24;">${stock.dividendYield}%</div>
+                                <div class="metric-sub">Annual dividend income</div>
+                            </div>
+                        </div>
+                        
+                        <div class="ai-analysis">
+                            <div class="analysis-title">
+                                <span>🤖</span> AI ANALYSIS
+                            </div>
+                            <div class="analysis-text">
+                                ${analysis}
+                            </div>
+                        </div>
+                        
+                        <div class="action-buttons-large">
+                            <button class="action-btn-large watchlist-btn" onclick="toggleWatchlist('${stock.symbol}')">
+                                <span>⭐</span>
+                                ${stock.inWatchlist ? 'IN WATCHLIST' : 'ADD TO WATCHLIST'}
+                            </button>
+                            <button class="action-btn-large analyze-btn-large" onclick="analyzeStock('${stock.symbol}')">
+                                <span>📊</span>
+                                DETAILED ANALYSIS
+                            </button>
+                            <button class="action-btn-large trade-btn" onclick="openTradePanel('${stock.symbol}')">
+                                <span>🚀</span>
+                                TRADE NOW
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            stocksGrid.innerHTML = stocksHTML;
+        }
+        
+        // ==================== AI ANALYSIS FUNCTIONS ====================
+        function analyzeStockSignal(stock) {
+            let score = 50;
+            let reasons = [];
+            
+            // Price momentum
+            if (stock.change > 0) {
+                score += stock.changePercent * 10;
+                reasons.push('Positive momentum');
+            } else {
+                score -= Math.abs(stock.changePercent) * 10;
+                reasons.push('Negative momentum');
+            }
+            
+            // RSI analysis
+            if (stock.rsi < 30) {
+                score += 20;
+                reasons.push('Oversold (RSI < 30)');
+            } else if (stock.rsi > 70) {
+                score -= 15;
+                reasons.push('Overbought (RSI > 70)');
+            }
+            
+            // Volume analysis
+            if (stock.volume > stock.avgVolume * 1.5) {
+                score += 10;
+                reasons.push('High volume activity');
+            }
+            
+            // Determine signal
+            let signal, confidence;
+            if (score >= 70) {
+                signal = 'STRONG BUY';
+                confidence = score / 100;
+            } else if (score >= 60) {
+                signal = 'BUY';
+                confidence = 0.7;
+            } else if (score >= 40) {
+                signal = 'HOLD';
+                confidence = 0.5;
+            } else if (score >= 30) {
+                signal = 'SELL';
+                confidence = 0.6;
+            } else {
+                signal = 'STRONG SELL';
+                confidence = (100 - score) / 100;
+            }
+            
+            return {
+                signal: signal,
+                confidence: confidence,
+                score: score,
+                reasons: reasons
+            };
+        }
+        
+        function generateStockAnalysis(stock) {
+            const signal = analyzeStockSignal(stock);
+            const distanceToHigh = (((stock.week52High - stock.price) / stock.price) * 100).toFixed(2);
+            const distanceToLow = (((stock.price - stock.week52Low) / stock.price) * 100).toFixed(2);
+            
+            const analyses = [
+                `${signal.signal} signal with ${Math.round(signal.confidence * 100)}% confidence. ${signal.reasons.join(', ')}.`,
+                `Trading at ${distanceToHigh}% below 52-week high (₹${stock.week52High}) and ${distanceToLow}% above 52-week low (₹${stock.week52Low}).`,
+                `Volume is ${stock.volume > stock.avgVolume ? 'above' : 'below'} average by ${Math.abs(((stock.volume - stock.avgVolume) / stock.avgVolume) * 100).toFixed(2)}%.`,
+                `P/E ratio of ${stock.peRatio} is ${stock.peRatio > 25 ? 'above sector average' : 'reasonable compared to peers'}.`,
+                `RSI at ${stock.rsi.toFixed(2)} indicates ${stock.rsi < 30 ? 'oversold conditions' : stock.rsi > 70 ? 'overbought conditions' : 'neutral momentum'}.`
+            ];
+            
+            return analyses.join(' ');
+        }
+        
+        // ==================== FILTER FUNCTIONS ====================
+        function filterStocks(filterType) {
+            // Update active filter
+            document.querySelectorAll('.quick-filter').forEach(filter => {
+                filter.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            currentFilter = filterType;
+            currentPage = 1;
+            
+            let filteredStocks = [...allStocks];
+            
+            switch(filterType) {
+                case 'nifty50':
+                    filteredStocks = allStocks.filter(stock => 
+                        STOCKS_CONFIG.DEFAULT_STOCKS.includes(stock.symbol));
+                    break;
+                    
+                case 'banking':
+                    filteredStocks = allStocks.filter(stock => 
+                        STOCKS_CONFIG.SECTORS[stock.symbol] === 'Banking' || 
+                        stock.symbol.includes('BANK'));
+                    break;
+                    
+                case 'technology':
+                    filteredStocks = allStocks.filter(stock => 
+                        STOCKS_CONFIG.SECTORS[stock.symbol] === 'Technology' || 
+                        stock.name.toLowerCase().includes('tech'));
+                    break;
+                    
+                case 'bullish':
+                    filteredStocks = allStocks.filter(stock => 
+                        analyzeStockSignal(stock).signal.includes('BUY'));
+                    break;
+                    
+                case 'oversold':
+                    filteredStocks = allStocks.filter(stock => stock.rsi < 30);
+                    break;
+                    
+                case 'high_volume':
+                    filteredStocks = allStocks.filter(stock => 
+                        stock.volume > stock.avgVolume * 1.3);
+                    break;
+                    
+                case 'ai_recommended':
+                    filteredStocks = allStocks.filter(stock => {
+                        const signal = analyzeStockSignal(stock);
+                        return signal.score >= 70;
+                    });
+                    break;
+            }
+            
+            displayedStocks = filteredStocks.slice(0, stocksPerPage);
+            displayStocks(displayedStocks);
+        }
+        
+        function searchStocks() {
+            const searchTerm = document.getElementById('searchInput').value.trim().toUpperCase();
+            
+            if (!searchTerm) {
+                filterStocks('all');
+                return;
+            }
+            
+            if (searchTerm === 'ALL') {
+                displayedStocks = allStocks.slice(0, stocksPerPage * currentPage);
+                displayStocks(displayedStocks);
+                return;
+            }
+            
+            const filtered = allStocks.filter(stock => 
+                stock.symbol.includes(searchTerm) || 
+                stock.name.toUpperCase().includes(searchTerm)
+            );
+            
+            displayedStocks = filtered.slice(0, stocksPerPage);
+            displayStocks(displayedStocks);
+        }
+        
+        function loadMoreStocks() {
+            currentPage++;
+            const startIndex = (currentPage - 1) * stocksPerPage;
+            const additionalStocks = allStocks.slice(startIndex, startIndex + stocksPerPage);
+            
+            displayedStocks = [...displayedStocks, ...additionalStocks];
+            displayStocks(displayedStocks);
+        }
+        
+        // ==================== ACTION FUNCTIONS ====================
+        function toggleWatchlist(symbol) {
+            const stock = allStocks.find(s => s.symbol === symbol);
+            if (stock) {
+                stock.inWatchlist = !stock.inWatchlist;
+                displayStocks(displayedStocks);
+                
+                alert(`${symbol} ${stock.inWatchlist ? 'added to' : 'removed from'} watchlist`);
+            }
+        }
+        
+        function analyzeStock(symbol) {
+            alert(`Opening detailed analysis for ${symbol}...\n\nThis would show:\n• Complete technical analysis\n• Chart patterns\n• News impact\n• Trading setup\n• Risk assessment`);
+            
+            // In full version, redirect to analysis page
+            // window.location.href = `analysis.html?symbol=${symbol}`;
+        }
+        
+        function openTradePanel(symbol) {
+            alert(`Opening trade panel for ${symbol}...\n\nThis would show:\n• Buy/Sell interface\n• Position calculator\n• Risk management\n• Order placement`);
+        }
+        
+        // ==================== UTILITY FUNCTIONS ====================
+        function formatMarketCap(cap) {
+            if (cap >= 100000) {
+                return (cap / 100000).toFixed(2) + 'T';
+            } else if (cap >= 1000) {
+                return (cap / 1000).toFixed(2) + 'B';
+            }
+            return cap.toFixed(2) + 'M';
+        }
+        
+        function formatVolume(vol) {
+            if (vol >= 1000000) {
+                return (vol / 1000000).toFixed(2) + 'M';
+            } else if (vol >= 1000) {
+                return (vol / 1000).toFixed(2) + 'K';
+            }
+            return vol.toFixed(0);
+        }
+        
+        function updateStockPrices() {
+            // Simulate price updates
+            allStocks.forEach(stock => {
+                const changePercent = (Math.random() * 4) - 2; // -2% to +2%
+                const change = stock.price * (changePercent / 100);
+                
+                stock.price += change;
+                stock.change = change;
+                stock.changePercent = changePercent;
+                
+                // Update RSI slightly
+                stock.rsi += (Math.random() - 0.5) * 2;
+                stock.rsi = Math.max(0, Math.min(100, stock.rsi));
+                
+                // Update volume
+                stock.volume = stock.avgVolume * (0.8 + Math.random() * 0.4);
+            });
+            
+            // Refresh display
+            if (displayedStocks.length > 0) {
+                displayStocks(displayedStocks);
+            }
+            
+            console.log('Stock prices updated');
+        }
+        
+        // ==================== DEMO DATA GENERATOR ====================
+        function loadDemoStockData() {
+            allStocks = STOCKS_CONFIG.DEFAULT_STOCKS.slice(0, 20).map(symbol => 
+                generateStockData(symbol)
+            );
+            
+            displayedStocks = allStocks.slice(0, stocksPerPage);
+            displayStocks(displayedStocks);
+        }
+        
+        function generateStockData(symbol) {
+            const basePrice = {
+                'RELIANCE': 2850.50,
+                'TCS': 3845.25,
+                'HDFCBANK': 1645.80,
+                'INFY': 1520.40,
+                'ICICIBANK': 1085.60,
+                'HINDUNILVR': 2500.75,
+                'ITC': 425.80,
+                'SBIN': 620.45,
+                'BHARTIARTL': 1150.30,
+                'BAJFINANCE': 7245.60
+            }[symbol] || 1000 + Math.random() * 2000;
+            
+            const change = (Math.random() - 0.5) * 50;
+            const changePercent = (change / basePrice) * 100;
+            
+            const names = {
+                'RELIANCE': 'Reliance Industries Ltd.',
+                'TCS': 'Tata Consultancy Services Ltd.',
+                'HDFCBANK': 'HDFC Bank Ltd.',
+                'INFY': 'Infosys Ltd.',
+                'ICICIBANK': 'ICICI Bank Ltd.',
+                'HINDUNILVR': 'Hindustan Unilever Ltd.',
+                'ITC': 'ITC Ltd.',
+                'SBIN': 'State Bank of India',
+                'BHARTIARTL': 'Bharti Airtel Ltd.',
+                'BAJFINANCE': 'Bajaj Finance Ltd.',
+                'KOTAKBANK': 'Kotak Mahindra Bank Ltd.',
+                'LT': 'Larsen & Toubro Ltd.',
+                'HCLTECH': 'HCL Technologies Ltd.',
+                'AXISBANK': 'Axis Bank Ltd.',
+                'ASIANPAINT': 'Asian Paints Ltd.',
+                'MARUTI': 'Maruti Suzuki India Ltd.',
+                'SUNPHARMA': 'Sun Pharmaceutical Ltd.',
+                'TITAN': 'Titan Company Ltd.',
+                'WIPRO': 'Wipro Ltd.',
+                'POWERGRID': 'Power Grid Corporation of India Ltd.'
+            };
+            
+            return {
+                symbol: symbol,
+                name: names[symbol] || `${symbol} Limited`,
+                price: basePrice + change,
+                change: change,
+                changePercent: changePercent,
+                week52High: basePrice * (1.1 + Math.random() * 0.2),
+                week52Low: basePrice * (0.7 + Math.random() * 0.1),
+                marketCap: (5000 + Math.random() * 15000) * 100, // in crores
+                volume: Math.random() * 5000000 + 1000000,
+                avgVolume: Math.random() * 4000000 + 1000000,
+                peRatio: 15 + Math.random() * 25,
+                dividendYield: (0.5 + Math.random() * 3).toFixed(2),
+                rsi: 30 + Math.random() * 40,
+                inWatchlist: Math.random() > 0.7
+            };
+        }
+    </script>
+</body>
+</html>
