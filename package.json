@@ -1,0 +1,17 @@
+{
+  "name": "ai-stock-scanner-backend",
+  "version": "1.0.0",
+  "description": "Real AI stock prediction backend with Markov Chains",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.6.0",
+    "cors": "^2.8.5"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
